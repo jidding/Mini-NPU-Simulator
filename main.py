@@ -38,6 +38,30 @@ def measure_mac_time(pattern, filter_matrix, iterations=10):
     avg_time_ms = ((end_time - start_time) / iterations) * 1000
     return avg_time_ms
 
+def normalize_label(raw_label):
+    """
+    다양한 입력 라벨('+', 'cross', 'x' 등)을 내부 표준 라벨('Cross', 'X')로 정규화합니다.
+    """
+    if not isinstance(raw_label, str):
+        return "UNKNOWN"
+    cleaned = raw_label.strip().lower()
+    if cleaned in ("+", "cross"):
+        return "Cross"
+    elif cleaned == "x":
+        return "X"
+    return raw_label
+
+def is_valid_matrix(matrix, expected_size):
+    """
+    전달받은 2차원 리스트가 정확히 expected_size x expected_size 크기인지 검증합니다.
+    """
+    if not isinstance(matrix, list) or len(matrix) != expected_size:
+        return False
+    for row in matrix:
+        if not isinstance(row, list) or len(row) != expected_size:
+            return False
+    return True
+
 def input_matrix_3x3(matrix_name):
     """
     3x3 행렬을 한 줄씩(공백 구분) 입력받아 2차원 리스트로 반환합니다.
@@ -99,6 +123,139 @@ def run_mode_1():
     print(f"연산 시간(평균/10회): {avg_time_ms:.4f} ms")
     print(f"판정: {result}")
 
+def print_performance_table(normalized_filters):
+    """
+    3x3, 5x5, 13x13, 25x25 크기의 MAC 평균 연산 시간(10회)과 연산 횟수(N^2) 표를 출력합니다.
+    """
+    print("\n#---------------------------------------")
+    print("# [3] 성능 분석 (평균/10회)")
+    print("#---------------------------------------")
+    print(f"{'크기':<10} {'평균 시간(ms)':<15} {'연산 횟수'}")
+    print("-" * 40)
+
+    # 3x3 기본 테스트용 패턴/필터 준비
+    sample_3x3 = [
+        [0.0, 1.0, 0.0],
+        [1.0, 1.0, 1.0],
+        [0.0, 1.0, 0.0]
+    ]
+    time_3x3 = measure_mac_time(sample_3x3, sample_3x3, iterations=10)
+    print(f"{'3×3':<10} {time_3x3:<15.4f} {3 * 3}")
+
+    # 5x5, 13x13, 25x25 측정 (data.json에서 로드된 Cross 필터 활용)
+    for size in (5, 13, 25):
+        size_key = f"size_{size}"
+        if size_key in normalized_filters and "Cross" in normalized_filters[size_key]:
+            mat = normalized_filters[size_key]["Cross"]
+            avg_ms = measure_mac_time(mat, mat, iterations=10)
+            print(f"{f'{size}×{size}':<10} {avg_ms:<15.4f} {size * size}")
+
+def run_mode_2(filepath="data.json"):
+    """
+    모드 2: data.json 로드, 스키마/크기 검증, 일괄 MAC 판정, 성능 분석 및 결과 요약을 수행합니다.
+    """
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print(f"⚠️ 오류: '{filepath}' 파일을 찾을 수 없습니다. 프로젝트 루트 경로를 확인하세요.")
+        return
+    except json.JSONDecodeError:
+        print(f"⚠️ 오류: '{filepath}' 파일의 JSON 형식이 손상되었습니다.")
+        return
+
+    raw_filters = data.get("filters", {})
+    raw_patterns = data.get("patterns", {})
+
+    # 1. 필터 로드 및 라벨 정규화
+    print("\n#---------------------------------------")
+    print("# [1] 필터 로드")
+    print("#---------------------------------------")
+    normalized_filters = {}
+    for size_key, filter_dict in raw_filters.items():
+        normalized_filters[size_key] = {}
+        for raw_label, matrix in filter_dict.items():
+            std_label = normalize_label(raw_label)
+            normalized_filters[size_key][std_label] = matrix
+        loaded_labels = ", ".join(normalized_filters[size_key].keys())
+        print(f"✓ {size_key:<7} 필터 로드 완료 ({loaded_labels})")
+
+    # 2. 패턴 일괄 분석
+    print("\n#---------------------------------------")
+    print("# [2] 패턴 분석 (라벨 정규화 적용)")
+    print("#---------------------------------------")
+    total_tests = 0
+    passed_tests = 0
+    failed_cases = []
+
+    for case_id, case_info in raw_patterns.items():
+        total_tests += 1
+        print(f"-- {case_id} ---")
+
+        # 키 이름(예: size_5_1)에서 크기 N 추출
+        try:
+            n = int(case_id.split("_")[1])
+        except (IndexError, ValueError):
+            reason = "키 형식 오류로 크기 N을 추출할 수 없음"
+            print(f"판정: ERROR | FAIL ({reason})")
+            failed_cases.append((case_id, reason))
+            continue
+
+        size_key = f"size_{n}"
+        input_matrix = case_info.get("input")
+        expected_std = normalize_label(case_info.get("expected"))
+
+        # 필터 존재 여부 및 크기 일치 검증
+        if size_key not in normalized_filters:
+            reason = f"해당 크기({size_key})의 기준 필터가 존재하지 않음"
+            print(f"판정: ERROR | FAIL ({reason})")
+            failed_cases.append((case_id, reason))
+            continue
+
+        cross_filter = normalized_filters[size_key].get("Cross")
+        x_filter = normalized_filters[size_key].get("X")
+
+        if not is_valid_matrix(input_matrix, n) or not is_valid_matrix(cross_filter, n) or not is_valid_matrix(x_filter, n):
+            reason = f"배열 크기 불일치 (기대 크기: {n}×{n})"
+            print(f"판정: ERROR | expected: {expected_std} | FAIL ({reason})")
+            failed_cases.append((case_id, reason))
+            continue
+
+        # MAC 연산 및 판정
+        score_cross = mac_operation(input_matrix, cross_filter)
+        score_x = mac_operation(input_matrix, x_filter)
+        judgment = judge_scores(score_cross, score_x, label_a="Cross", label_b="X", tie_label="UNDECIDED")
+
+        print(f"Cross 점수: {score_cross}")
+        print(f"X 점수: {score_x}")
+
+        if judgment == expected_std:
+            passed_tests += 1
+            print(f"판정: {judgment} | expected: {expected_std} | PASS")
+        else:
+            if judgment == "UNDECIDED":
+                reason = "동점(UNDECIDED) 처리 규칙에 따라 FAIL"
+            else:
+                reason = f"판정 불일치 (판정: {judgment}, 기대값: {expected_std})"
+            print(f"판정: {judgment} | expected: {expected_std} | FAIL ({reason})")
+            failed_cases.append((case_id, reason))
+
+    # 3. 크기별 성능 분석 표 출력
+    print_performance_table(normalized_filters)
+
+    # 4. 최종 결과 요약 리포트 출력
+    print("\n#---------------------------------------")
+    print("# [4] 결과 요약")
+    print("#---------------------------------------")
+    print(f"총 테스트: {total_tests}개")
+    print(f"통과: {passed_tests}개")
+    print(f"실패: {len(failed_cases)}개")
+
+    if failed_cases:
+        print("\n실패 케이스:")
+        for cid, msg in failed_cases:
+            print(f"- {cid}: {msg}")
+
 def main():
     while True:
         print("\n=== Mini NPU Simulator ===")
@@ -112,7 +269,7 @@ def main():
         if choice == "1":
             run_mode_1()
         elif choice == "2":
-            print("\n🚧 data.json 분석 기능은 다음 스텝(Step 4)에서 구현합니다.")
+            run_mode_2()
         elif choice == "0":
             print("시뮬레이터를 종료합니다.")
             break
