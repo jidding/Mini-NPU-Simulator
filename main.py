@@ -62,6 +62,25 @@ def is_valid_matrix(matrix, expected_size):
             return False
     return True
 
+def generate_cross_pattern(n):
+    """
+    n x n 크기의 십자가(Cross) 패턴 2차원 리스트를 자동 생성합니다.
+    """
+    mid = n // 2
+    return [
+        [1.0 if (i == mid or j == mid) else 0.0 for j in range(n)]
+        for i in range(n)
+    ]
+
+def generate_x_pattern(n):
+    """
+    n x n 크기의 X 패턴 2차원 리스트를 자동 생성합니다.
+    """
+    return [
+        [1.0 if (i == j or i + j == n - 1) else 0.0 for j in range(n)]
+        for i in range(n)
+    ]
+
 def input_matrix_3x3(matrix_name):
     """
     3x3 행렬을 한 줄씩(공백 구분) 입력받아 2차원 리스트로 반환합니다.
