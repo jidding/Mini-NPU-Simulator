@@ -81,6 +81,35 @@ def generate_x_pattern(n):
         for i in range(n)
     ]
 
+def flatten_matrix(matrix):
+    """
+    n x n 2차원 리스트를 길이 n^2인 1차원 리스트로 평탄화합니다.
+    """
+    flat = []
+    for row in matrix:
+        flat.extend(row)
+    return flat
+
+def mac_operation_1d(flat_pattern, flat_filter):
+    """
+    1차원으로 변환된 패턴과 필터를 단일 반복문으로 MAC 연산합니다.
+    """
+    total_score = 0.0
+    for idx in range(len(flat_pattern)):
+        total_score += flat_pattern[idx] * flat_filter[idx]
+    return total_score
+
+def measure_mac_time_1d(flat_pattern, flat_filter, iterations=10):
+    """
+    순수 1D MAC 연산 함수 호출 구간만 iterations 회 반복 측정하여 평균 시간(ms)을 반환합니다.
+    """
+    start_time = time.perf_counter()
+    for _ in range(iterations):
+        mac_operation_1d(flat_pattern, flat_filter)
+    end_time = time.perf_counter()
+    
+    return ((end_time - start_time) / iterations) * 1000
+
 def input_matrix_3x3(matrix_name):
     """
     3x3 행렬을 한 줄씩(공백 구분) 입력받아 2차원 리스트로 반환합니다.
