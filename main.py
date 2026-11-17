@@ -4,7 +4,6 @@ import time
 def mac_operation(pattern, filter_matrix):
     """
     n x n 크기의 pattern과 filter_matrix를 위치별로 곱하고 누적하여 합산(MAC)합니다.
-    (외부 라이브러리 없이 순수 이중 반복문 사용)
     """
     n = len(pattern)
     total_score = 0.0
@@ -366,13 +365,13 @@ def main():
             run_mode_1()
         elif choice == "2":
             run_mode_2()
-        elif choice =="3":
+        elif choice == "3":
             run_mode_3()
         elif choice == "0":
             print("시뮬레이터를 종료합니다.")
             break
         else:
-            print("⚠️ 잘못된 선택입니다. 1, 2, 0 중 하나를 입력하세요.")
+            print("⚠️ 잘못된 선택입니다. 1, 2, 3, 0 중 하나를 입력하세요.")
 
 if __name__ == "__main__":
     main()
