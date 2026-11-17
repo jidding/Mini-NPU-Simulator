@@ -304,12 +304,60 @@ def run_mode_2(filepath="data.json"):
         for cid, msg in failed_cases:
             print(f"- {cid}: {msg}")
 
+def run_mode_3():
+    """
+    보너스 모드 3: 패턴 자동 생성기를 활용해 2D MAC vs 1D 최적화 MAC 성능을 비교합니다.
+    """
+    print("\n#---------------------------------------")
+    print("# [보너스] 패턴 자동 생성 및 1D 메모리 최적화 성능 비교")
+    print("#---------------------------------------")
+    
+    extra_input = input("추가로 테스트할 홀수 크기 N을 입력하세요 (건너뛰려면 Enter): ").strip()
+    test_sizes = [3, 5, 13, 25]
+    
+    if extra_input:
+        try:
+            custom_n = int(extra_input)
+            if custom_n >= 3:
+                if custom_n not in test_sizes:
+                    test_sizes.append(custom_n)
+            else:
+                print("⚠️ 3 이상의 정수만 추가할 수 있어 기본 크기로 진행합니다.")
+        except ValueError:
+            print("⚠️ 숫자가 아니므로 기본 크기로 진행합니다.")
+
+    iterations = 100  # 정밀한 시간 비교를 위해 동일하게 100회 반복 측정
+    print(f"\n{'크기':<8} {'2D 시간(ms)':<14} {'1D 시간(ms)':<14} {'속도 향상률':<12} {'점수 일치'}")
+    print("-" * 62)
+
+    for n in test_sizes:
+        # 1. 패턴 생성기 재활용하여 Cross, X 패턴 자동 생성
+        cross_2d = generate_cross_pattern(n)
+        x_2d = generate_x_pattern(n)
+
+        # 2. 1차원 배열 변환
+        cross_1d = flatten_matrix(cross_2d)
+        x_1d = flatten_matrix(x_2d)
+
+        # 3. 연산 결과 정합성 검증 (2D 결과와 1D 결과가 동일한지 확인)
+        score_2d = mac_operation(cross_2d, x_2d)
+        score_1d = mac_operation_1d(cross_1d, x_1d)
+        is_same = "일치" if abs(score_2d - score_1d) < EPSILON else "불일치"
+
+        # 4. 동일 입력, 동일 반복 횟수 성능 측정
+        time_2d = measure_mac_time(cross_2d, x_2d, iterations=iterations)
+        time_1d = measure_mac_time_1d(cross_1d, x_1d, iterations=iterations)
+
+        speedup = ((time_2d - time_1d) / time_2d * 100) if time_2d > 0 else 0.0
+        print(f"{f'{n}×{n}':<8} {time_2d:<14.4f} {time_1d:<14.4f} {speedup:>7.1f}%     {is_same}")
+
 def main():
     while True:
         print("\n=== Mini NPU Simulator ===")
         print("[모드 선택]")
         print("1. 사용자 입력 (3x3)")
         print("2. data.json 분석")
+        print("3. [보너스] 패턴 자동 생성 및 1D 최적화 성능 비교")
         print("0. 종료")
         
         choice = input("선택: ").strip()
@@ -318,6 +366,8 @@ def main():
             run_mode_1()
         elif choice == "2":
             run_mode_2()
+        elif choice =="3":
+            run_mode_3()
         elif choice == "0":
             print("시뮬레이터를 종료합니다.")
             break
