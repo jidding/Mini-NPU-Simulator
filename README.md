@@ -67,23 +67,28 @@
 
 #### 1) 모드 1: 사용자 입력 오류 방어 및 정상 판정
 - 한 줄에 3개 미만의 숫자를 입력했을 때 예외 안내 문구를 출력하고 재입력을 유도하며, 정상 입력 시 MAC 점수와 판정(`B`)을 출력합니다.
-(여기에 1번 이미지 '입력 오류 방지, 정상 판정(모드 1).PNG' 드래그 앤 드롭)
+<img width="473" height="791" alt="입력 오류 방지, 정상 판정(모드 1)" src="https://github.com/user-attachments/assets/54a7cdf4-7dfa-4c03-a8c8-5b41ecf7926a" />
+
 
 #### 2) 모드 1: 부동소수점 동점(`1e-9`) 판정 불가 처리
 - 두 필터 점수의 차이가 허용오차(`1e-9`) 미만인 경우 미세 오차로 인한 오판정을 막기 위해 `판정 불가`로 처리합니다.
-(여기에 2번 이미지 '동점 허용 오차 테스트.PNG' 드래그 앤 드롭)
+<img width="471" height="725" alt="동점 허용 오차 테스트" src="https://github.com/user-attachments/assets/7c3647c9-fa41-4e1d-9a9a-4831ea831fce" />
+
 
 #### 3) 모드 2: `data.json` 필터 로드 및 라벨 정규화 판정
 - 크기별 필터 로드 후 표준 라벨(`Cross`, `X`)로 정규화하여 6개 테스트 케이스의 점수 및 `PASS`/`FAIL` 여부를 일괄 판정합니다.
-(여기에 3번 이미지 'data 분석 표 1.PNG' 드래그 앤 드롭)
+<img width="473" height="775" alt="data 분석 표 1" src="https://github.com/user-attachments/assets/34e1f989-924c-469e-a7d1-6b8ca22da8ea" />
+
 
 #### 4) 모드 2: 크기별 성능 분석 표 및 최종 결과 요약
 - `3×3`부터 `25×25`까지 10회 반복 측정 평균 연산 시간(ms)과 연산 횟수($N^2$) 표를 출력하고, 전체 통과/실패 요약 리포트를 제공합니다.
-(여기에 4번 이미지 'data 분석 표 2.PNG' 드래그 앤 드롭)
+<img width="394" height="374" alt="data 분석 표 2" src="https://github.com/user-attachments/assets/38e2aee4-7220-4a39-b8b1-18298d4ccab8" />
+
 
 #### 5) 모드 3(보너스): 패턴 자동 생성·1D 최적화 비교 및 정상 종료
 - 추가 입력한 `51×51` 크기를 포함한 패턴 자동 생성 결과와 2차원 대비 1차원 배열 평탄화 연산의 속도 향상률 및 점수 일치를 검증한 뒤 안전하게 종료합니다.
-(여기에 5번 이미지 '보너스, 종료.PNG' 드래그 앤 드롭)
+<img width="908" height="551" alt="보너스, 종료" src="https://github.com/user-attachments/assets/a388d549-07fc-41ff-8121-212d5f3a2e4b" />
+
 
 ---
 
